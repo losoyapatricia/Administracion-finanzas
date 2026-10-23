@@ -1,0 +1,154 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net: Default-deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Entity Validation Helpers
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'email']) &&
+        data.keys().hasOnly(['uid', 'email', 'displayName', 'photoURL', 'createdAt']) &&
+        data.uid == userId &&
+        data.email is string && data.email.size() <= 200 &&
+        (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 150)) &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 2000));
+    }
+
+    function isValidIncome(data, userId) {
+      return data.keys().hasAll(['userId', 'date', 'concept', 'amount', 'quincenaId', 'year']) &&
+        data.keys().hasOnly(['userId', 'date', 'concept', 'amount', 'quincenaId', 'year', 'notes', 'createdAt', 'updatedAt']) &&
+        data.userId == userId &&
+        data.date is string && data.date.size() <= 20 &&
+        data.concept is string && data.concept.size() > 0 && data.concept.size() <= 300 &&
+        data.amount is number && data.amount > 0 &&
+        data.quincenaId is string && data.quincenaId.size() <= 50 &&
+        data.year is number &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000));
+    }
+
+    function isValidExpense(data, userId) {
+      return data.keys().hasAll(['userId', 'date', 'establishment', 'description', 'amount', 'categoryId', 'paymentMethod', 'quincenaId', 'year']) &&
+        data.keys().hasOnly(['userId', 'date', 'establishment', 'description', 'amount', 'categoryId', 'paymentMethod', 'ticketNumber', 'receiptImage', 'receiptName', 'quincenaId', 'year', 'createdAt', 'updatedAt']) &&
+        data.userId == userId &&
+        data.date is string && data.date.size() <= 20 &&
+        data.establishment is string && data.establishment.size() > 0 && data.establishment.size() <= 200 &&
+        data.description is string && data.description.size() <= 500 &&
+        data.amount is number && data.amount > 0 &&
+        data.categoryId is string && data.categoryId.size() <= 100 &&
+        data.paymentMethod is string && data.paymentMethod.size() <= 100 &&
+        data.quincenaId is string && data.quincenaId.size() <= 50 &&
+        data.year is number &&
+        (!('ticketNumber' in data) || (data.ticketNumber is string && data.ticketNumber.size() <= 100)) &&
+        (!('receiptImage' in data) || (data.receiptImage is string && data.receiptImage.size() <= 500000)) &&
+        (!('receiptName' in data) || (data.receiptName is string && data.receiptName.size() <= 200));
+    }
+
+    function isValidCategory(data, userId) {
+      return data.keys().hasAll(['userId', 'name', 'color', 'icon', 'active']) &&
+        data.keys().hasOnly(['userId', 'name', 'color', 'icon', 'active', 'isDefault', 'description']) &&
+        data.userId == userId &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+        data.color is string && data.color.size() <= 50 &&
+        data.icon is string && data.icon.size() <= 50 &&
+        data.active is bool &&
+        (!('isDefault' in data) || data.isDefault is bool) &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 300));
+    }
+
+    function isValidRealSaving(data, userId) {
+      return data.keys().hasAll(['userId', 'date', 'concept', 'amount', 'destination', 'quincenaId', 'year']) &&
+        data.keys().hasOnly(['userId', 'date', 'concept', 'amount', 'destination', 'quincenaId', 'year', 'notes', 'createdAt']) &&
+        data.userId == userId &&
+        data.date is string && data.date.size() <= 20 &&
+        data.concept is string && data.concept.size() > 0 && data.concept.size() <= 300 &&
+        data.amount is number && data.amount > 0 &&
+        data.destination is string && data.destination.size() <= 200 &&
+        data.quincenaId is string && data.quincenaId.size() <= 50 &&
+        data.year is number &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000));
+    }
+
+    function isValidSavingsGoal(data, userId) {
+      return data.keys().hasAll(['userId', 'name', 'targetAmount', 'currentAmount', 'color']) &&
+        data.keys().hasOnly(['userId', 'name', 'targetAmount', 'currentAmount', 'targetDate', 'category', 'color']) &&
+        data.userId == userId &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+        data.targetAmount is number && data.targetAmount > 0 &&
+        data.currentAmount is number && data.currentAmount >= 0 &&
+        data.color is string && data.color.size() <= 50 &&
+        (!('targetDate' in data) || (data.targetDate is string && data.targetDate.size() <= 20)) &&
+        (!('category' in data) || (data.category is string && data.category.size() <= 100));
+    }
+
+    // User Profile Document
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUserProfile(incoming(), userId);
+      allow update: if isOwner(userId) && isValidUserProfile(incoming(), userId) && incoming().uid == existing().uid;
+      allow delete: if isOwner(userId);
+
+      // Incomes Subcollection
+      match /incomes/{incomeId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(incomeId) && isValidIncome(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(incomeId) && isValidIncome(incoming(), userId) && incoming().userId == existing().userId;
+        allow delete: if isOwner(userId) && isValidId(incomeId);
+      }
+
+      // Expenses Subcollection
+      match /expenses/{expenseId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(expenseId) && isValidExpense(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(expenseId) && isValidExpense(incoming(), userId) && incoming().userId == existing().userId;
+        allow delete: if isOwner(userId) && isValidId(expenseId);
+      }
+
+      // Categories Subcollection
+      match /categories/{categoryId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(categoryId) && isValidCategory(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(categoryId) && isValidCategory(incoming(), userId) && incoming().userId == existing().userId;
+        allow delete: if isOwner(userId) && isValidId(categoryId);
+      }
+
+      // Real Savings Subcollection
+      match /savings/{savingId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(savingId) && isValidRealSaving(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(savingId) && isValidRealSaving(incoming(), userId) && incoming().userId == existing().userId;
+        allow delete: if isOwner(userId) && isValidId(savingId);
+      }
+
+      // Goals Subcollection
+      match /goals/{goalId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(goalId) && isValidSavingsGoal(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(goalId) && isValidSavingsGoal(incoming(), userId) && incoming().userId == existing().userId;
+        allow delete: if isOwner(userId) && isValidId(goalId);
+      }
+    }
+  }
+}

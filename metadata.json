@@ -1,0 +1,6 @@
+{
+  "name": "FinanZas Quincenal - Control de Finanzas Personales",
+  "description": "Aplicación integral para administrar ingresos quincenales, gastos diarios con comprobantes fotográficos, presupuestos, ahorro real y reportes analíticos en Pesos Mexicanos (MXN).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

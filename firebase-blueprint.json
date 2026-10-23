@@ -1,0 +1,129 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile document",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Income": {
+      "title": "Income",
+      "description": "Quincenal and regular income entries",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string" },
+        "concept": { "type": "string", "maxLength": 300 },
+        "amount": { "type": "number" },
+        "quincenaId": { "type": "string", "maxLength": 50 },
+        "year": { "type": "number" },
+        "notes": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "date", "concept", "amount", "quincenaId", "year"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "Daily expense transactions",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string" },
+        "establishment": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 500 },
+        "amount": { "type": "number" },
+        "categoryId": { "type": "string", "maxLength": 100 },
+        "paymentMethod": { "type": "string", "maxLength": 100 },
+        "ticketNumber": { "type": "string", "maxLength": 100 },
+        "receiptImage": { "type": "string" },
+        "receiptName": { "type": "string", "maxLength": 200 },
+        "quincenaId": { "type": "string", "maxLength": 50 },
+        "year": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "date", "establishment", "description", "amount", "categoryId", "paymentMethod", "quincenaId", "year"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "User customized expense categories",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string", "maxLength": 100 },
+        "color": { "type": "string", "maxLength": 50 },
+        "icon": { "type": "string", "maxLength": 50 },
+        "active": { "type": "boolean" },
+        "isDefault": { "type": "boolean" },
+        "description": { "type": "string", "maxLength": 300 }
+      },
+      "required": ["userId", "name", "color", "icon", "active"]
+    },
+    "RealSaving": {
+      "title": "RealSaving",
+      "description": "Real savings and investments allocations",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string" },
+        "concept": { "type": "string", "maxLength": 300 },
+        "amount": { "type": "number" },
+        "destination": { "type": "string", "maxLength": 200 },
+        "quincenaId": { "type": "string", "maxLength": 50 },
+        "year": { "type": "number" },
+        "notes": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "date", "concept", "amount", "destination", "quincenaId", "year"]
+    },
+    "SavingsGoal": {
+      "title": "SavingsGoal",
+      "description": "Target savings goals and progression",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string", "maxLength": 200 },
+        "targetAmount": { "type": "number" },
+        "currentAmount": { "type": "number" },
+        "targetDate": { "type": "string" },
+        "category": { "type": "string", "maxLength": 100 },
+        "color": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["userId", "name", "targetAmount", "currentAmount", "color"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document"
+    },
+    "/users/{userId}/incomes/{incomeId}": {
+      "schema": "Income",
+      "description": "User's registered quincenal incomes"
+    },
+    "/users/{userId}/expenses/{expenseId}": {
+      "schema": "Expense",
+      "description": "User's registered daily expenses"
+    },
+    "/users/{userId}/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "User's custom and default categories"
+    },
+    "/users/{userId}/savings/{savingId}": {
+      "schema": "RealSaving",
+      "description": "User's actual savings records"
+    },
+    "/users/{userId}/goals/{goalId}": {
+      "schema": "SavingsGoal",
+      "description": "User's progressive savings targets"
+    }
+  }
+}
